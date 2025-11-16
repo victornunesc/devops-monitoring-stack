@@ -18,7 +18,7 @@ class TestConfig:
         config = Config.from_env()
         
         assert config.api_url == 'https://legadoviaipe.rnp.br/api/norte'
-        assert config.poll_interval == 300
+        assert config.poll_interval == 60
         assert config.otel_endpoint == 'http://otel-collector:4317'
         assert config.service_name == 'viaipe-collector'
         assert config.health_port == 8081
@@ -83,7 +83,7 @@ class TestConfig:
         """Test that Config is a proper dataclass"""
         config = Config(
             api_url='https://test.example.com',
-            poll_interval=300,
+            poll_interval=60,
             otel_endpoint='http://otel:4317',
             service_name='test',
             health_port=8081,
