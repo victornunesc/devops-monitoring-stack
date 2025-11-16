@@ -318,7 +318,7 @@ ViaIPE Collector ──┘                           │
 ```bash
 # Clone o repositório
 git clone <repository-url>
-cd project-devops
+cd devops-monitoring-stack
 
 # Inicie todos os serviços
 ./start.sh
@@ -389,7 +389,7 @@ A plataforma disponibiliza dashboards pré-configurados para visualização das 
 ## 📁 Estrutura do Projeto
 
 ```
-project-devops/
+devops-monitoring-stack/
 ├── README.md                      # 📖 Este arquivo (High Level)
 ├── docker-compose.yml             # Orquestração principal
 ├── start.sh                       # Script de inicialização

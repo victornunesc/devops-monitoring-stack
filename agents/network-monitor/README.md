@@ -173,9 +173,6 @@ docker compose up -d network-monitor
 
 # Visualizar logs
 docker compose logs -f network-monitor
-
-# Verificar health
-curl http://localhost:8080/health
 ```
 
 ## 🧪 Testes
