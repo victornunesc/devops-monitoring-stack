@@ -1,0 +1,12 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: webhook
+    receivers:
+      - uid: webhook-receiver
+        type: webhook
+        settings:
+          url: ${WEBHOOK_URL}
+          httpMethod: POST
+        disableResolveMessage: false

@@ -1,0 +1,28 @@
+services:
+  network-monitor:
+    build:
+      context: ../agents/network-monitor
+      dockerfile: Dockerfile
+    image: network-monitor:1.0.0
+    container_name: network-monitor
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=network-monitor
+      - MONITOR_TARGETS=google.com,youtube.com,rnp.br
+      - PING_INTERVAL=30 # seconds
+      - HTTP_INTERVAL=50 # seconds
+    ports:
+      - "8080:8080"   # Health check
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    depends_on:
+      - otel-collector
+    cap_add:
+      - NET_RAW
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s

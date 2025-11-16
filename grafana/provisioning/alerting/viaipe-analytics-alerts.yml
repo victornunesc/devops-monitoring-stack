@@ -1,0 +1,662 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: ViaIpe Analytics Alerts
+    folder: viaipe
+    interval: 1m
+    rules:
+      # Alerta 1: Disponibilidade Baixa do Cliente
+      - uid: viaipe_low_client_availability
+        title: ViaIpe - Low Client Availability
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: viaipe_client_availability_percent < 95
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 95
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'Cliente {{ $labels.client_name }} ({{ $labels.client_id }}) está com disponibilidade de {{ printf "%.2f" $values.B.Value }}% (threshold: 95%)'
+          summary: Disponibilidade baixa detectada no cliente {{ $labels.client_name }}
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+      # Alerta 2: Disponibilidade Crítica do Cliente
+      - uid: viaipe_critical_client_availability
+        title: ViaIpe - Critical Client Availability
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: viaipe_client_availability_percent < 90
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 90
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 3m
+        annotations:
+          description: 'Cliente {{ $labels.client_name }} ({{ $labels.client_id }}) está com disponibilidade CRÍTICA de {{ printf "%.2f" $values.B.Value }}% (threshold: 90%)'
+          summary: Disponibilidade crítica no cliente {{ $labels.client_name }}
+        labels:
+          severity: critical
+          team: network
+        isPaused: false
+
+      # Alerta 3: Disponibilidade Média da Região Baixa
+      - uid: viaipe_low_regional_availability
+        title: ViaIpe - Low Regional Availability
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: avg(viaipe_client_availability_percent) < 95
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 95
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'Disponibilidade média da Região Norte está em {{ printf "%.2f" $values.B.Value }}% (threshold: 95%)'
+          summary: Disponibilidade regional abaixo do esperado
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+      # Alerta 4: Score de Qualidade Baixo
+      - uid: viaipe_low_quality_score
+        title: ViaIpe - Low Connection Quality Score
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: viaipe_connection_quality_score < 50
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 50
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'Cliente {{ $labels.client_name }} ({{ $labels.client_id }}) está com score de qualidade de {{ printf "%.1f" $values.B.Value }} (threshold: 50)'
+          summary: Score de qualidade baixo para cliente {{ $labels.client_name }}
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+      # Alerta 5: Score de Qualidade Crítico
+      - uid: viaipe_critical_quality_score
+        title: ViaIpe - Critical Connection Quality Score
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: viaipe_connection_quality_score < 30
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 30
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 3m
+        annotations:
+          description: 'Cliente {{ $labels.client_name }} ({{ $labels.client_id }}) está com score de qualidade CRÍTICO de {{ printf "%.1f" $values.B.Value }} (threshold: 30)'
+          summary: Conexão crítica para cliente {{ $labels.client_name }}
+        labels:
+          severity: critical
+          team: network
+        isPaused: false
+
+      # Alerta 6: Score de Qualidade Médio Regional Baixo
+      - uid: viaipe_low_regional_quality
+        title: ViaIpe - Low Regional Quality Score
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: avg(viaipe_connection_quality_score) < 70
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 70
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'Score médio de qualidade da Região Norte está em {{ printf "%.1f" $values.B.Value }} (threshold: 70)'
+          summary: Qualidade regional abaixo do esperado
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+      # Alerta 7: Alto Uso de Banda - Inbound
+      - uid: viaipe_high_bandwidth_in
+        title: ViaIpe - High Bandwidth Usage (Inbound)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: viaipe_bandwidth_usage_in_bps > 900000000
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 900000000
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'Cliente {{ $labels.client_name }} está com uso de banda inbound de {{ printf "%.2f" (divide $values.B.Value 1000000) }} Mbps (threshold: 900 Mbps)'
+          summary: Alto uso de banda inbound para cliente {{ $labels.client_name }}
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+      # Alerta 8: Alto Uso de Banda - Outbound
+      - uid: viaipe_high_bandwidth_out
+        title: ViaIpe - High Bandwidth Usage (Outbound)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: viaipe_bandwidth_usage_out_bps > 900000000
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 900000000
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'Cliente {{ $labels.client_name }} está com uso de banda outbound de {{ printf "%.2f" (divide $values.B.Value 1000000) }} Mbps (threshold: 900 Mbps)'
+          summary: Alto uso de banda outbound para cliente {{ $labels.client_name }}
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+      # Alerta 9: Pico de Banda Anormal
+      - uid: viaipe_abnormal_bandwidth_peak
+        title: ViaIpe - Abnormal Bandwidth Peak
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: |
+                (viaipe_bandwidth_peak_in_bps > 950000000) or 
+                (viaipe_bandwidth_peak_out_bps > 950000000)
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 950000000
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        annotations:
+          description: 'Cliente {{ $labels.client_id }} atingiu pico de banda de {{ printf "%.2f" (divide $values.B.Value 1000000) }} Mbps (threshold: 950 Mbps)'
+          summary: Pico de banda detectado para cliente {{ $labels.client_id }}
+        labels:
+          severity: info
+          team: network
+        isPaused: false
+
+      # Alerta 10: Erros na API ViaIpe
+      - uid: viaipe_api_errors
+        title: ViaIpe - API Errors Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: sum(increase(viaipe_api_errors_total[5m])) > 0
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        annotations:
+          description: 'API ViaIpe reportou {{ printf "%.0f" $values.B.Value }} erros nos últimos 5 minutos'
+          summary: Erros detectados na API ViaIpe
+        labels:
+          severity: warning
+          team: backend
+        isPaused: false
+
+      # Alerta 11: Taxa de Erros API Alta
+      - uid: viaipe_high_api_error_rate
+        title: ViaIpe - High API Error Rate
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: |
+                (
+                  sum(increase(viaipe_api_errors_total[5m]))
+                  /
+                  sum(increase(viaipe_api_requests_total[5m]))
+                ) * 100 > 5
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 5
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 3m
+        annotations:
+          description: 'Taxa de erros da API ViaIpe está em {{ printf "%.2f" $values.B.Value }}% (threshold: 5%)'
+          summary: Taxa de erros alta na API ViaIpe
+        labels:
+          severity: critical
+          team: backend
+        isPaused: false
+
+      # Alerta 12: Nenhum Cliente Monitorado
+      - uid: viaipe_no_clients_monitored
+        title: ViaIpe - No Clients Being Monitored
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: count(viaipe_client_availability_percent) == 0
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: Alerting
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'Nenhuma métrica de cliente ViaIpe sendo coletada nos últimos 10 minutos'
+          summary: Collector ViaIpe pode estar offline
+        labels:
+          severity: critical
+          team: backend
+        isPaused: false

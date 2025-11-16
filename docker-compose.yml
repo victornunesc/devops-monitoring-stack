@@ -1,0 +1,37 @@
+# ============================================================================
+# Arquitetura: OpenTelemetry + VictoriaMetrics + Grafana
+# Padrões: CNCF, 12-Factor App, Cloud-Native Best Practices
+# ============================================================================
+
+# ============================================================================
+# SERVICES
+# ============================================================================
+include:
+  # Observability Layer
+  - containers/otel-collector.yml
+  # Storage Layer  
+  - containers/victoriametrics.yml
+  # Visualization Layer
+  - containers/grafana.yml
+  # Application Layer - Monitoring Agents
+  - containers/network-monitor.yml
+  - containers/viaipe-collector.yml
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  victoriametrics-data:
+    driver: local
+    name: victoriametrics-data
+  grafana-data:
+    driver: local
+    name: grafana-data
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  monitoring-network:
+    driver: bridge
+    name: monitoring-network

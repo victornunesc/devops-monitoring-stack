@@ -1,0 +1,800 @@
+apiVersion: 1
+
+groups:
+  # ============================================================================
+  # PING MONITORING ALERTS
+  # ============================================================================
+  - orgId: 1
+    name: Ping Monitoring Alerts
+    folder: Network
+    interval: 1m
+    rules:
+      # Alerta 1: Latência Alta de Ping
+      - uid: high_ping_latency
+        title: High Ping Latency
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: histogram_quantile(0.95, sum(rate(network_ping_rtt_milliseconds_bucket[5m])) by (le, target))
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 100
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'Ping latency (p95) for {{ $labels.target }} is {{ printf "%.1f" $values.B.Value }}ms (threshold: 100ms)'
+          summary: High ping latency detected on {{ $labels.target }}
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+      # Alerta 2: Latência Crítica de Ping
+      - uid: critical_ping_latency
+        title: Critical Ping Latency
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: histogram_quantile(0.95, sum(rate(network_ping_rtt_milliseconds_bucket[5m])) by (le, target))
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 200
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'CRITICAL: Ping latency (p95) for {{ $labels.target }} is {{ printf "%.1f" $values.B.Value }}ms (threshold: 200ms)'
+          summary: Critical ping latency on {{ $labels.target }}
+        labels:
+          severity: critical
+          team: network
+        isPaused: false
+
+      # Alerta 3: Degradação Progressiva de Latência
+      - uid: latency_degradation
+        title: Progressive Latency Degradation
+        condition: E
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: |
+                (
+                  histogram_quantile(0.95, sum(rate(network_ping_rtt_milliseconds_bucket[5m])) by (le, target))
+                  -
+                  histogram_quantile(0.95, sum(rate(network_ping_rtt_milliseconds_bucket[1h])) by (le, target))
+                )
+                /
+                histogram_quantile(0.95, sum(rate(network_ping_rtt_milliseconds_bucket[1h])) by (le, target))
+                * 100
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: histogram_quantile(0.95, sum(rate(network_ping_rtt_milliseconds_bucket[5m])) by (le, target))
+              refId: C
+          - refId: D
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: C
+              reducer: last
+              refId: D
+          - refId: E
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 50
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - E
+                  type: query
+              refId: E
+        noDataState: NoData
+        execErrState: Error
+        for: 10m
+        annotations:
+          description: 'Latency for {{ $labels.target }} has increased {{ printf "%.1f" $values.B.Value }}% (current: {{ printf "%.1f" $values.D.Value }}ms) compared to 1-hour average'
+          summary: Progressive latency degradation on {{ $labels.target }}
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+  # ============================================================================
+  # PACKET LOSS ALERTS
+  # ============================================================================
+  - orgId: 1
+    name: Packet Loss Alerts
+    folder: Network
+    interval: 1m
+    rules:
+      # Alerta 1: Perda de Pacotes Alta
+      - uid: high_packet_loss
+        title: High Packet Loss
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: histogram_quantile(0.99, sum(rate(network_ping_packet_loss_percent_bucket[5m])) by (le, target))
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 5
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        annotations:
+          description: 'Packet loss for {{ $labels.target }} is {{ printf "%.2f" $values.B.Value }}% (threshold: 5%)'
+          summary: High packet loss detected on {{ $labels.target }}
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+      # Alerta 2: Perda de Pacotes Crítica
+      - uid: critical_packet_loss
+        title: Critical Packet Loss
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: histogram_quantile(0.99, sum(rate(network_ping_packet_loss_percent_bucket[5m])) by (le, target))
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 10
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        annotations:
+          description: 'CRITICAL: Packet loss for {{ $labels.target }} is {{ printf "%.2f" $values.B.Value }}% (threshold: 10%)'
+          summary: Critical packet loss on {{ $labels.target }}
+        labels:
+          severity: critical
+          team: network
+        isPaused: false
+
+  # ============================================================================
+  # HTTP PERFORMANCE ALERTS
+  # ============================================================================
+  - orgId: 1
+    name: HTTP Performance Alerts
+    folder: Network
+    interval: 1m
+    rules:
+      # Alerta 1: Tempo de Resposta HTTP Alto
+      - uid: high_http_response_time
+        title: High HTTP Response Time
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: histogram_quantile(0.95, sum(rate(http_client_duration_milliseconds_bucket[5m])) by (le, target))
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 2000
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'HTTP response time (p95) for {{ $labels.target }} is {{ printf "%.0f" $values.B.Value }}ms (threshold: 2000ms)'
+          summary: High HTTP response time on {{ $labels.target }}
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+      # Alerta 2: Tempo de Resposta HTTP Crítico
+      - uid: critical_http_response_time
+        title: Critical HTTP Response Time
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: histogram_quantile(0.95, sum(rate(http_client_duration_milliseconds_bucket[5m])) by (le, target))
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 5000
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'CRITICAL: HTTP response time (p95) for {{ $labels.target }} is {{ printf "%.0f" $values.B.Value }}ms (threshold: 5000ms)'
+          summary: Critical HTTP response time on {{ $labels.target }}
+        labels:
+          severity: critical
+          team: network
+        isPaused: false
+
+  # ============================================================================
+  # HTTP ERRORS ALERTS
+  # ============================================================================
+  - orgId: 1
+    name: HTTP Errors Alerts
+    folder: Network
+    interval: 1m
+    rules:
+      # Alerta 1: Alta Taxa de Erros HTTP 5xx
+      - uid: high_http_5xx_rate
+        title: High HTTP 5xx Error Rate
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: |
+                (
+                  sum by (target) (rate(http_client_status_total{http_status_code=~"5.."}[5m]))
+                  /
+                  sum by (target) (rate(http_client_status_total[5m]))
+                ) * 100
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 5
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 3m
+        annotations:
+          description: 'HTTP 5xx error rate for {{ $labels.target }} is {{ printf "%.2f" $values.B.Value }}% (threshold: 5%)'
+          summary: High rate of HTTP 5xx errors on {{ $labels.target }}
+        labels:
+          severity: critical
+          team: network
+        isPaused: false
+
+      # Alerta 2: Alta Taxa de Erros HTTP 4xx
+      - uid: high_http_4xx_rate
+        title: High HTTP 4xx Error Rate
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: |
+                (
+                  sum by (target) (rate(http_client_status_total{http_status_code=~"4.."}[5m]))
+                  /
+                  sum by (target) (rate(http_client_status_total[5m]))
+                ) * 100
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 10
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: 'HTTP 4xx error rate for {{ $labels.target }} is {{ printf "%.2f" $values.B.Value }}% (threshold: 10%)'
+          summary: High rate of HTTP 4xx errors on {{ $labels.target }}
+        labels:
+          severity: warning
+          team: network
+        isPaused: false
+
+  # ============================================================================
+  # AVAILABILITY ALERTS
+  # ============================================================================
+  - orgId: 1
+    name: Availability Alerts
+    folder: Network
+    interval: 1m
+    rules:
+      # Alerta 1: Uptime Baixo
+      - uid: low_uptime
+        title: Low Uptime
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: |
+                (
+                  sum by (target) (increase(http_client_status_total{http_status_code=~"2.."}[5m]))
+                  /
+                  sum by (target) (increase(http_client_status_total[5m]))
+                ) * 100
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 95
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 3m
+        annotations:
+          description: 'Uptime for {{ $labels.target }} is {{ printf "%.2f" $values.B.Value }}% (threshold: 95%)'
+          summary: Low uptime detected on {{ $labels.target }}
+        labels:
+          severity: critical
+          team: network
+        isPaused: false
+
+      # Alerta 2: Target Inacessível
+      - uid: target_unreachable
+        title: Target Unreachable
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: sum by (target) (increase(http_client_status_total{http_status_code=~"2.."}[3m]))
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: Alerting
+        execErrState: Error
+        for: 3m
+        annotations:
+          description: 'Target {{ $labels.target }} has no successful HTTP requests in the last 3 minutes'
+          summary: Target {{ $labels.target }} is unreachable
+        labels:
+          severity: critical
+          team: network
+        isPaused: false
+
+      # Alerta 3: Múltiplos Targets com Problemas
+      - uid: multiple_targets_down
+        title: Multiple Targets with Issues
+        condition: D
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: |
+                count(
+                  (
+                    sum by (target) (increase(http_client_status_total{http_status_code=~"2.."}[5m]))
+                    /
+                    sum by (target) (increase(http_client_status_total[5m]))
+                  ) < 0.95
+                )
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: count(sum by (target) (http_client_status_total))
+              refId: C
+          - refId: D
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 2
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - D
+                  type: query
+              refId: D
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: '{{ printf "%.0f" $values.B.Value }} targets are experiencing availability issues - possible infrastructure problem'
+          summary: Multiple targets with issues detected
+        labels:
+          severity: critical
+          team: network
+        isPaused: false
+
+      # Alerta 4: Ping Target Inacessível
+      - uid: ping_target_unreachable
+        title: Ping Target Unreachable
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: VictoriaMetrics
+            model:
+              expr: sum by (target) (increase(network_ping_success_total[3m]))
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            relativeTimeRange:
+              from: 180
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  type: query
+              refId: C
+        noDataState: Alerting
+        execErrState: Error
+        for: 3m
+        annotations:
+          description: 'Target {{ $labels.target }} is not responding to ping requests for 3+ minutes'
+          summary: Ping target {{ $labels.target }} is unreachable
+        labels:
+          severity: critical
+          team: network
+        isPaused: false

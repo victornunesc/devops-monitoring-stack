@@ -1,0 +1,25 @@
+services:
+  viaipe-collector:
+    build:
+      context: ../agents/viaipe-collector
+      dockerfile: Dockerfile
+    image: viaipe-collector:1.0.0
+    container_name: viaipe-collector
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=viaipe-collector
+      - VIAIPE_API_URL=https://legadoviaipe.rnp.br/api/norte
+      - VIAIPE_POLL_INTERVAL=60 # seconds
+    ports:
+      - "8081:8081"   # Health check
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    depends_on:
+      - otel-collector
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
